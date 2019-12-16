@@ -3,6 +3,7 @@
  */
 import React, { Component } from 'react';
 import { View, Image, Animated, Easing } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import Styles, { width, height, EXTRA_WIDTH } from './styles';
 
 export default class ImageWrapper extends Component {
@@ -19,7 +20,6 @@ export default class ImageWrapper extends Component {
 
     constructor(props) {
         super(props);
-
         this.state = {
             maxWidth: -1,
             imgWidth: props.extraSpacing + props.layoutWidth,
@@ -27,8 +27,13 @@ export default class ImageWrapper extends Component {
         };
     }
 
-    // wip
-    componentWillMount() {
+ 
+    componentDidMount() {
+        if(this.props.focusedIndex == this.props.index) {
+            this.startAnimation();
+        }
+
+        //moved from componentWillMount here to fix future deprecation issue
         const { uri } = this.props;
         if(isNaN(uri)) {
             Image.getSize(uri, (imgWidth, imgHeight) => {
@@ -42,18 +47,16 @@ export default class ImageWrapper extends Component {
         }
     }
 
-    componentDidMount() {
-        if(this.props.focusedIndex == this.props.index) {
-            this.startAnimation();
-        }
-    }
-
-    componentWillReceiveProps(nextProps) {
-        this.state.translateX.stopAnimation(() => {
-            if(nextProps.focusedIndex == nextProps.index) {
+    //componentWillReceiveProps will be deprecated  
+    shouldComponentUpdate(nextProps, nextState){
+        if(nextProps.focusedIndex == nextProps.index) {
+            this.state.translateX.stopAnimation(() => {
                 this.startAnimation();
-            }
-        });
+            });
+            return false;
+        }else{
+            return true;
+        }
     }
 
     // true -> left to right
@@ -106,12 +109,20 @@ export default class ImageWrapper extends Component {
         const imgWidth = layoutWidth + this.getExtraSpacing();
         const direction = this.getDirection() ? 'flex-end' : 'flex-start';
 
+        const AnimatedFastImage = Animated.createAnimatedComponent(FastImage);
+
         return (
             <View style={[Styles.itemContainer, { width: layoutWidth }]}>
-                <Animated.Image
+                {/* <Animated.Image
                     style={[Styles.image, { alignSelf: direction, width: imgWidth, transform: [{ translateX }] }]}
                     source={isNaN(uri) ? { uri } : uri}
                     resizeMethod='resize'
+                /> */}
+                <AnimatedFastImage
+                    style={[Styles.image, { alignSelf: direction, width: imgWidth, transform: [{ translateX }] }]}
+                    source={isNaN(uri) ? { uri } : uri}
+                    // resizeMethod='resize'
+                    resizeMode={FastImage.resizeMode.contain}
                 />
             </View>
         );
